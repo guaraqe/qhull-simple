@@ -81,8 +81,8 @@ qhull d points
       d' = fromIntegral d
       m' = fromIntegral m
       command = if d <= 4
-                then "qhull Qt"
-                else "qhull Qt Qx"
+                then "qhull Qt Qz" -- Tirar qz?
+                else "qhull Qt Qx Qz"
       action = withCString command $ \pCommand ->
                SV.unsafeWith (GV.convert points') $ \pPoints ->
                alloca $ \ppRes ->
@@ -102,9 +102,11 @@ qhull d points
                     free pErrMsg >>
                     return (Right (Error (fromIntegral ret) errMsg))
 
+
 delaunay :: Int -> SV.Vector Double -> Either Error [SV.Vector Int]
 delaunay d points
-    | GV.null points = Right []
+    | GV.length points < d*(d + 2) = Right []
+    | GV.any isNaN points = Right []
     | GV.length points `rem` d /= 0 =
         Left (Error 1 "Number of points and dimension do not match.")
     | otherwise = unsafePerformIO action
@@ -113,7 +115,7 @@ delaunay d points
       d' = fromIntegral d
       m' = fromIntegral m
       command = if d <= 3
-                  then "qhull d Qbb Qt"
+                  then "qhull d Qbb Qt" -- tirar Qz, juntar Qbb?
                   else "qhull d Qbb Qt Qx"
       action = withCString command $ \pCommand ->
                SV.unsafeWith points $ \pPoints ->
